@@ -1,18 +1,35 @@
 import React from 'react';
+import { Rocket } from 'lucide-react';
 
-const Footer = () => {
+function Footer() {
   return (
-    <footer style={{ padding: '20px', backgroundColor: '#f0f0f0', marginTop: '20px', textAlign: 'center' }}>
-      <div>
-        <p>© 2025 StartupConnect - All rights reserved</p>
-        <div style={{ marginTop: '10px' }}>
-          <a href="#" style={{ marginRight: '10px' }}>Terms of Service</a>
-          <a href="#" style={{ marginRight: '10px' }}>Privacy Policy</a>
-          <a href="#" style={{ marginRight: '10px' }}>Contact Us</a>
+    <footer className="bg-white">
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <Rocket className="h-8 w-8 text-indigo-600" />
+            <span className="ml-2 text-xl font-bold text-gray-900">StartupSync</span>
+          </div>
+          <div className="flex space-x-6">
+            <a href="#" className="text-gray-400 hover:text-gray-500">
+              Terms
+            </a>
+            <a href="#" className="text-gray-400 hover:text-gray-500">
+              Privacy
+            </a>
+            <a href="#" className="text-gray-400 hover:text-gray-500">
+              Contact
+            </a>
+          </div>
+        </div>
+        <div className="mt-8 border-t border-gray-200 pt-8">
+          <p className="text-center text-base text-gray-400">
+            &copy; {new Date().getFullYear()} StartupSync. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
   );
-};
+}
 
 export default Footer;
