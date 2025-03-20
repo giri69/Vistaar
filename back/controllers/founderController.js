@@ -64,37 +64,54 @@ const submitStartupApplication = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;
   
+  console.log("Received startup data:", req.body);
+  
   const { 
-    name, 
-    description, 
-    industry, 
-    fundingNeeded, 
-    equityOffered, 
-    problem,
-    solution,
-    marketSize,
-    competitiveLandscape,
-    businessModel,
-    teamMembers,
-    pitchMaterials
+    name, // Title/Company Name
+    description,
+    logoUrl,
+    applicationVideoUrl,
+    supportingDocumentUrl,
+    // Default values for other required fields
+    industry = 'tech',
+    fundingNeeded = 10000,
+    equityOffered = 10
   } = req.body;
   
   // Validate required fields
-  if (!name || !description || !industry || !fundingNeeded || !equityOffered) {
-    return error(res, 'Please provide all required fields', 400);
+  if (!name || !description || !logoUrl) {
+    console.log("Validation failed:", { name, description, logoUrl });
+    return error(res, 'Please provide all required fields: name, description, and logo URL', 400);
   }
   
-  // Validate pitch materials
-  if (!pitchMaterials || !Array.isArray(pitchMaterials)) {
-    return error(res, 'Pitch materials must be an array', 400);
-  }
-
-  // Check for required pitch materials
-  const hasBanner = pitchMaterials.some(item => item.type === 'banner');
-  const hasLogo = pitchMaterials.some(item => item.type === 'logo');
+  // Create pitch materials array from provided URLs
+  const pitchMaterials = [
+    {
+      type: 'logo',
+      url: logoUrl,
+      description: 'Company logo',
+      uploadedAt: new Date()
+    }
+  ];
   
-  if (!hasBanner || !hasLogo) {
-    return error(res, 'Pitch materials must include at least a banner and logo', 400);
+  // Add application video if provided
+  if (applicationVideoUrl) {
+    pitchMaterials.push({
+      type: 'video',
+      url: applicationVideoUrl,
+      description: 'Application video',
+      uploadedAt: new Date()
+    });
+  }
+  
+  // Add supporting document if provided
+  if (supportingDocumentUrl) {
+    pitchMaterials.push({
+      type: 'document',
+      url: supportingDocumentUrl,
+      description: 'Supporting document',
+      uploadedAt: new Date()
+    });
   }
   
   // Check if startup name already exists
@@ -108,20 +125,9 @@ const submitStartupApplication = asyncHandler(async (req, res) => {
     name,
     description,
     industry,
-    fundingNeeded,
-    equityOffered,
-    problem: problem || '',
-    solution: solution || '',
-    marketSize: marketSize || '',
-    competitiveLandscape: competitiveLandscape || '',
-    businessModel: businessModel || '',
-    teamMembers: teamMembers || [],
-    pitchMaterials: pitchMaterials.map(item => ({
-      type: item.type,
-      url: item.url,
-      description: item.description || '',
-      uploadedAt: new Date()
-    })),
+    fundingNeeded: Number(fundingNeeded),
+    equityOffered: Number(equityOffered),
+    pitchMaterials,
     founderId: new ObjectId(userId),
     status: 'pending', // pending, approved, rejected
     investors: [],
@@ -131,25 +137,49 @@ const submitStartupApplication = asyncHandler(async (req, res) => {
     updatedAt: new Date()
   };
   
-  // Insert startup into database
-  const result = await db.collection('startups').insertOne(newStartup);
-  
-  // Update founder's startups array
-  await db.collection('founderProfiles').updateOne(
-    { userId: new ObjectId(userId) },
-    { $push: { startups: result.insertedId } }
-  );
-  
-  // Update user's startups array
-  await db.collection('users').updateOne(
-    { _id: new ObjectId(userId) },
-    { $push: { startups: result.insertedId } }
-  );
-  
-  return success(res, { 
-    startup: { ...newStartup, _id: result.insertedId },
-    message: 'Startup application submitted successfully and pending approval'
-  }, 201);
+  try {
+    // Insert startup into database
+    const result = await db.collection('startups').insertOne(newStartup);
+    
+    // Update founder's startups array
+    await db.collection('founderProfiles').updateOne(
+      { userId: new ObjectId(userId) },
+      { $push: { startups: result.insertedId } }
+    );
+    
+    // Update user's startups array
+    await db.collection('users').updateOne(
+      { _id: new ObjectId(userId) },
+      { $push: { startups: result.insertedId } }
+    );
+    
+    // Create notification for admins
+    const admins = await db.collection('users').find({ role: 'admin' }).toArray();
+    
+    // Notify all admins about the new startup application
+    if (admins && admins.length > 0) {
+      const notifications = admins.map(admin => ({
+        userId: admin._id,
+        type: 'new_startup',
+        title: 'New Startup Application',
+        message: `A new startup "${name}" has been submitted for review.`,
+        read: false,
+        createdAt: new Date()
+      }));
+      
+      if (notifications.length > 0) {
+        await db.collection('notifications').insertMany(notifications);
+      }
+    }
+    
+    return success(res, { 
+      startup: { ...newStartup, _id: result.insertedId },
+      message: 'Startup application submitted successfully and pending approval'
+    }, 201);
+  } catch (err) {
+    console.error("Database error:", err);
+    return error(res, 'Database error occurred while creating startup', 500);
+  }
 });
 
 // Add additional pitch materials to startup
@@ -157,12 +187,11 @@ const addPitchMaterials = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;
   const startupId = req.params.id;
-  const { materials } = req.body;
-  
-  // Validate materials
-  if (!materials || !Array.isArray(materials) || materials.length === 0) {
-    return error(res, 'Please provide valid pitch materials', 400);
-  }
+  const { 
+    logoUrl,
+    applicationVideoUrl,
+    supportingDocumentUrl
+  } = req.body;
   
   // Check if startup exists and belongs to the founder
   const startup = await db.collection('startups').findOne({
@@ -174,22 +203,65 @@ const addPitchMaterials = asyncHandler(async (req, res) => {
     return error(res, 'Startup not found or you do not have access', 404);
   }
   
-  // Format new materials
-  const newMaterials = materials.map(item => ({
-    type: item.type,
-    url: item.url,
-    description: item.description || '',
-    uploadedAt: new Date()
-  }));
+  // Get existing pitch materials
+  const pitchMaterials = [...startup.pitchMaterials];
   
-  // Add materials to startup
+  // Update logo URL if provided
+  if (logoUrl) {
+    const logoIndex = pitchMaterials.findIndex(item => item.type === 'logo');
+    if (logoIndex >= 0) {
+      pitchMaterials[logoIndex].url = logoUrl;
+      pitchMaterials[logoIndex].updatedAt = new Date();
+    } else {
+      pitchMaterials.push({
+        type: 'logo',
+        url: logoUrl,
+        description: 'Company logo',
+        uploadedAt: new Date()
+      });
+    }
+  }
+  
+  // Update video URL if provided
+  if (applicationVideoUrl) {
+    const videoIndex = pitchMaterials.findIndex(item => item.type === 'video');
+    if (videoIndex >= 0) {
+      pitchMaterials[videoIndex].url = applicationVideoUrl;
+      pitchMaterials[videoIndex].updatedAt = new Date();
+    } else {
+      pitchMaterials.push({
+        type: 'video',
+        url: applicationVideoUrl,
+        description: 'Application video',
+        uploadedAt: new Date()
+      });
+    }
+  }
+  
+  // Update document URL if provided
+  if (supportingDocumentUrl) {
+    const docIndex = pitchMaterials.findIndex(item => item.type === 'document');
+    if (docIndex >= 0) {
+      pitchMaterials[docIndex].url = supportingDocumentUrl;
+      pitchMaterials[docIndex].updatedAt = new Date();
+    } else {
+      pitchMaterials.push({
+        type: 'document',
+        url: supportingDocumentUrl,
+        description: 'Supporting document',
+        uploadedAt: new Date()
+      });
+    }
+  }
+  
+  // Update startup
   await db.collection('startups').updateOne(
     { _id: new ObjectId(startupId) },
     { 
-      $push: { 
-        pitchMaterials: { $each: newMaterials } 
-      },
-      $set: { updatedAt: new Date() }
+      $set: { 
+        pitchMaterials: pitchMaterials,
+        updatedAt: new Date()
+      }
     }
   );
   
@@ -199,7 +271,7 @@ const addPitchMaterials = asyncHandler(async (req, res) => {
   
   return success(res, { 
     startup: updatedStartup,
-    message: 'Pitch materials added successfully'
+    message: 'Pitch materials updated successfully'
   });
 });
 
@@ -247,34 +319,19 @@ const updateStartup = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const startupId = req.params.id;
   
-  // Get allowed fields to update
   const { 
-    description, 
-    problem,
-    solution,
-    marketSize,
-    competitiveLandscape,
-    businessModel,
-    teamMembers,
-    fundingNeeded, 
-    equityOffered 
+    name,
+    description,
+    logoUrl,
+    applicationVideoUrl,
+    supportingDocumentUrl,
+    // These fields might be updated too
+    industry,
+    fundingNeeded,
+    equityOffered
   } = req.body;
   
-  const updateData = {
-    updatedAt: new Date()
-  };
-  
-  if (description) updateData.description = description;
-  if (problem) updateData.problem = problem;
-  if (solution) updateData.solution = solution;
-  if (marketSize) updateData.marketSize = marketSize;
-  if (competitiveLandscape) updateData.competitiveLandscape = competitiveLandscape;
-  if (businessModel) updateData.businessModel = businessModel;
-  if (teamMembers) updateData.teamMembers = teamMembers;
-  if (fundingNeeded) updateData.fundingNeeded = fundingNeeded;
-  if (equityOffered) updateData.equityOffered = equityOffered;
-  
-  // Check if startup exists, belongs to the founder, and is not already approved
+  // Check if startup exists and belongs to the founder
   const startup = await db.collection('startups').findOne({
     _id: new ObjectId(startupId),
     founderId: new ObjectId(userId)
@@ -284,13 +341,82 @@ const updateStartup = asyncHandler(async (req, res) => {
     return error(res, 'Startup not found or you do not have access', 404);
   }
   
-  if (startup.status === 'approved') {
-    // For approved startups, only allow certain updates
-    delete updateData.equityOffered; // Don't allow changing equity once approved
+  // Don't allow updates if status is approved and equity is being changed
+  const restrictedUpdate = startup.status === 'approved' && 
+                           equityOffered !== undefined && 
+                           equityOffered !== startup.equityOffered;
+  if (restrictedUpdate) {
+    return error(res, 'Cannot update equity offered once startup is approved', 400);
+  }
+  
+  // Prepare update data
+  const updateData = {
+    updatedAt: new Date()
+  };
+  
+  if (name) updateData.name = name;
+  if (description) updateData.description = description;
+  if (industry) updateData.industry = industry;
+  if (fundingNeeded) updateData.fundingNeeded = Number(fundingNeeded);
+  if (equityOffered) updateData.equityOffered = Number(equityOffered);
+  
+  // Update pitch materials if new URLs are provided
+  if (logoUrl || applicationVideoUrl || supportingDocumentUrl) {
+    const pitchMaterials = [...startup.pitchMaterials];
+    
+    // Update logo URL if provided
+    if (logoUrl) {
+      const logoIndex = pitchMaterials.findIndex(item => item.type === 'logo');
+      if (logoIndex >= 0) {
+        pitchMaterials[logoIndex].url = logoUrl;
+        pitchMaterials[logoIndex].updatedAt = new Date();
+      } else {
+        pitchMaterials.push({
+          type: 'logo',
+          url: logoUrl,
+          description: 'Company logo',
+          uploadedAt: new Date()
+        });
+      }
+    }
+    
+    // Update video URL if provided
+    if (applicationVideoUrl) {
+      const videoIndex = pitchMaterials.findIndex(item => item.type === 'video');
+      if (videoIndex >= 0) {
+        pitchMaterials[videoIndex].url = applicationVideoUrl;
+        pitchMaterials[videoIndex].updatedAt = new Date();
+      } else {
+        pitchMaterials.push({
+          type: 'video',
+          url: applicationVideoUrl,
+          description: 'Application video',
+          uploadedAt: new Date()
+        });
+      }
+    }
+    
+    // Update document URL if provided
+    if (supportingDocumentUrl) {
+      const docIndex = pitchMaterials.findIndex(item => item.type === 'document');
+      if (docIndex >= 0) {
+        pitchMaterials[docIndex].url = supportingDocumentUrl;
+        pitchMaterials[docIndex].updatedAt = new Date();
+      } else {
+        pitchMaterials.push({
+          type: 'document',
+          url: supportingDocumentUrl,
+          description: 'Supporting document',
+          uploadedAt: new Date()
+        });
+      }
+    }
+    
+    updateData.pitchMaterials = pitchMaterials;
   }
   
   // Update startup
-  const result = await db.collection('startups').updateOne(
+  await db.collection('startups').updateOne(
     { _id: new ObjectId(startupId), founderId: new ObjectId(userId) },
     { $set: updateData }
   );
@@ -305,7 +431,7 @@ const updateStartup = asyncHandler(async (req, res) => {
   });
 });
 
-// Get investors interested in founder's startups
+// Get interested investors for a startup
 const getInterestedInvestors = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;

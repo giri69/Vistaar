@@ -6,6 +6,7 @@ import FounderDashboardPage from './pages/FounderDashboardPage';
 import InvestorDashboardPage from './pages/InvestorDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProfilePage from './pages/Profile';
+import StartupForm from './components/founder/StartupForm';
 
 
 // Protected route component
@@ -46,6 +47,14 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route
+        path="/new-start"
+        element={
+          <ProtectedRoute allowedRole="founder">
+            <StartupForm />
+          </ProtectedRoute>
+        } 
+      />
         <Route 
           path="/investor-dashboard" 
           element={
