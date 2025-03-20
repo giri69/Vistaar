@@ -1,21 +1,63 @@
 import React from 'react';
+import { Rocket, Menu, X } from 'lucide-react';
 
-const Navbar = ({ userType, navigateTo }) => {
+function Navbar() {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
   return (
-    <nav style={{ padding: '10px', backgroundColor: '#f0f0f0', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
-      <div>
-        <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>StartupConnect</span>
-      </div>
-      <div>
-        <button onClick={() => navigateTo('home')} style={{ marginRight: '10px' }}>Home</button>
-        {!userType && <button onClick={() => navigateTo('auth')} style={{ marginRight: '10px' }}>Login/Signup</button>}
-        {userType === 'founder' && <button onClick={() => navigateTo('founderDashboard')} style={{ marginRight: '10px' }}>Dashboard</button>}
-        {userType === 'investor' && <button onClick={() => navigateTo('investorDashboard')} style={{ marginRight: '10px' }}>Dashboard</button>}
-        {userType === 'admin' && <button onClick={() => navigateTo('adminDashboard')} style={{ marginRight: '10px' }}>Dashboard</button>}
-        {userType && <button onClick={() => navigateTo('home', null)}>Logout</button>}
+    <nav className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Rocket className="h-8 w-8 text-indigo-600" />
+            <span className="ml-2 text-xl font-bold text-gray-900">StartupSync</span>
+          </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
+            <a href="#how-it-works" className="text-gray-600 hover:text-gray-900">How it Works</a>
+            <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
+              Get Started
+            </button>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="pt-2 pb-3 space-y-1">
+              <a
+                href="#features"
+                className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                className="block px-3 py-2 text-gray-600 hover:text-gray-900"
+              >
+                How it Works
+              </a>
+              <button className="w-full text-left block px-3 py-2 bg-indigo-600 text-white rounded-md">
+                Get Started
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
-};
+}
 
 export default Navbar;

@@ -1,65 +1,22 @@
 import React from 'react';
 
-const Button = ({ text, onClick, variant = 'primary', size = 'medium' }) => {
-  // Basic styles
-  const baseStyle = {
-    borderRadius: '4px',
-    border: 'none',
-    cursor: 'pointer',
-    fontWeight: '500',
+function Button({ children, variant = 'primary', onClick, className = '', ...props }) {
+  const baseStyles = 'px-4 py-2 rounded-md font-medium transition-colors duration-200';
+  const variants = {
+    primary: 'bg-indigo-600 text-white hover:bg-indigo-700',
+    secondary: 'bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50',
+    danger: 'bg-red-600 text-white hover:bg-red-700'
   };
-  
-  // Variant styles
-  const variantStyles = {
-    primary: {
-      backgroundColor: '#4F46E5',
-      color: 'white',
-    },
-    secondary: {
-      backgroundColor: 'white',
-      color: '#4F46E5',
-      border: '1px solid #4F46E5',
-    },
-    success: {
-      backgroundColor: '#10B981',
-      color: 'white',
-    },
-    danger: {
-      backgroundColor: '#EF4444',
-      color: 'white',
-    },
-  };
-  
-  // Size styles
-  const sizeStyles = {
-    small: {
-      padding: '6px 12px',
-      fontSize: '0.875rem',
-    },
-    medium: {
-      padding: '8px 16px',
-      fontSize: '1rem',
-    },
-    large: {
-      padding: '10px 20px',
-      fontSize: '1.125rem',
-    },
-  };
-  
-  const buttonStyle = {
-    ...baseStyle,
-    ...variantStyles[variant],
-    ...sizeStyles[size],
-  };
-  
+
   return (
-    <button 
-      style={buttonStyle} 
+    <button
+      className={`${baseStyles} ${variants[variant]} ${className}`}
       onClick={onClick}
+      {...props}
     >
-      {text}
+      {children}
     </button>
   );
-};
+}
 
 export default Button;
