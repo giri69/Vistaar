@@ -1,7 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Users, Shield, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 function Hero() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setIsAuthenticated(true);
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const getDashboardLink = () => {
+    if (!user) return '/auth';
+    
+    switch(user.role) {
+      case 'founder':
+        return '/founder-dashboard';
+      case 'investor':
+        return '/investor-dashboard';
+      case 'admin':
+        return '/admin-dashboard';
+      default:
+        return '/auth';
+    }
+  };
+
   return (
     <div className="relative overflow-hidden">
       {/* Background Pattern */}
@@ -21,23 +51,37 @@ function Hero() {
               you need to grow your startup. All paperwork handled seamlessly.
             </p>
             <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-              <div className="rounded-md shadow">
-                <a
-                  href="#"
-                  className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
-                >
-                  Launch Your Startup
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </a>
-              </div>
-              <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
-                <a
-                  href="#"
-                  className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
-                >
-                  Become an Investor
-                </a>
-              </div>
+              {!isAuthenticated ? (
+                <>
+                  <div className="rounded-md shadow">
+                    <Link
+                      to="/auth"
+                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
+                    >
+                      Launch Your Startup
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </div>
+                  <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
+                    <Link
+                      to="/auth"
+                      className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                    >
+                      Become an Investor
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-md shadow">
+                  <Link
+                    to={getDashboardLink()}
+                    className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
+                  >
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
