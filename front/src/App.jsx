@@ -38,12 +38,6 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/auth" element={<AuthPage />} />
-<<<<<<< HEAD
-        <Route path="/founder-dashboard" element={<FounderDashboardPage />} />
-        <Route path="/investor-dashboard" element={<InvestorDashboardPage />} />
-        <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/profile" element={<ProfilePage/>} />
-=======
         <Route 
           path="/founder-dashboard" 
           element={
@@ -69,7 +63,6 @@ function App() {
           } 
         />
         <Route path="*" element={<Navigate to="/" />} />
->>>>>>> f855871601212f2519cc85c063838fadde2c78df
       </Routes>
     </Router>
   );
