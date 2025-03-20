@@ -5,6 +5,8 @@ import AuthPage from './pages/AuthPage';
 import FounderDashboardPage from './pages/FounderDashboardPage';
 import InvestorDashboardPage from './pages/InvestorDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import ProfilePage from './pages/Profile';
+
 
 // Protected route component
 const ProtectedRoute = ({ children, allowedRole }) => {
