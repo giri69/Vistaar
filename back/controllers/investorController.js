@@ -23,7 +23,14 @@ const getProfile = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;
-  const { bio, expertise, connections, investmentInterests } = req.body;
+  const { 
+    bio, 
+    expertise, 
+    connections, 
+    supportOfferings,
+    investmentInterests,
+    socialLinks
+  } = req.body;
   
   const updateData = {
     updatedAt: new Date()
@@ -32,7 +39,9 @@ const updateProfile = asyncHandler(async (req, res) => {
   if (bio) updateData.bio = bio;
   if (expertise) updateData.expertise = expertise;
   if (connections) updateData.connections = connections;
+  if (supportOfferings) updateData.supportOfferings = supportOfferings;
   if (investmentInterests) updateData.investmentInterests = investmentInterests;
+  if (socialLinks) updateData.socialLinks = socialLinks;
   
   const result = await db.collection('investorProfiles').updateOne(
     { userId: new ObjectId(userId) },
@@ -50,27 +59,103 @@ const updateProfile = asyncHandler(async (req, res) => {
   return success(res, { profile: updatedProfile });
 });
 
-// Get all approved startups for potential investment
+// Get all approved startups for potential support
 const getAvailableStartups = asyncHandler(async (req, res) => {
   const db = getDB();
+  const { industry, search } = req.query;
+  
+  const filter = { status: 'approved' };
+  
+  // Industry filter
+  if (industry) {
+    filter.industry = industry;
+  }
+  
+  // Search by name or description
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
+  }
   
   const startups = await db.collection('startups')
-    .find({ status: 'approved' })
+    .find(filter)
+    .project({
+      name: 1,
+      description: 1,
+      industry: 1,
+      fundingNeeded: 1,
+      equityOffered: 1,
+      pitchMaterials: {
+        $filter: {
+          input: "$pitchMaterials",
+          as: "material",
+          cond: { $in: ["$$material.type", ["banner", "logo"]] }
+        }
+      },
+      createdAt: 1
+    })
     .toArray();
   
   return success(res, { startups });
 });
 
-// Express interest in a startup
+// Get detailed information about a startup
+const getStartupDetails = asyncHandler(async (req, res) => {
+  const db = getDB();
+  const startupId = req.params.id;
+  
+  const startup = await db.collection('startups').findOne({
+    _id: new ObjectId(startupId),
+    status: 'approved'
+  });
+  
+  if (!startup) {
+    return error(res, 'Startup not found or not approved', 404);
+  }
+  
+  // Get founder basic info (without sensitive data)
+  const founder = await db.collection('founderProfiles').findOne(
+    { userId: startup.founderId },
+    { 
+      projection: { 
+        name: 1, 
+        bio: 1, 
+        skills: 1, 
+        achievements: 1,
+        socialLinks: 1 
+      } 
+    }
+  );
+  
+  // Check if investor has already expressed interest
+  const hasInterest = startup.investors && startup.investors.some(
+    inv => inv.investorId.toString() === req.user.id
+  );
+  
+  return success(res, { 
+    startup,
+    founder,
+    hasExpressedInterest: hasInterest
+  });
+});
+
+// Express interest in supporting a startup
 const expressInterest = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;
   const startupId = req.params.startupId;
-  const { offerDetails, equityRequested, amountOffered } = req.body;
+  const { 
+    supportType,
+    supportDetails,
+    equityRequested,
+    valueProposition
+  } = req.body;
   
   // Validate required fields
-  if (!equityRequested || !amountOffered) {
-    return error(res, 'Please provide equity requested and amount offered', 400);
+  if (!supportType || !supportDetails || !equityRequested) {
+    return error(res, 'Please provide support type, details, and equity requested', 400);
   }
   
   // Check if startup exists and is approved
@@ -93,7 +178,7 @@ const expressInterest = asyncHandler(async (req, res) => {
   }
   
   // Check if investor has already expressed interest
-  const alreadyInterested = startup.investors.some(
+  const alreadyInterested = startup.investors && startup.investors.some(
     inv => inv.investorId.toString() === userId.toString()
   );
   
@@ -105,9 +190,10 @@ const expressInterest = asyncHandler(async (req, res) => {
   const interestData = {
     investorId: new ObjectId(userId),
     investorName: investor.name,
+    supportType,
+    supportDetails,
     equityRequested,
-    amountOffered,
-    offerDetails: offerDetails || '',
+    valueProposition: valueProposition || '',
     status: 'pending', // pending, accepted, rejected
     createdAt: new Date()
   };
@@ -125,14 +211,24 @@ const expressInterest = asyncHandler(async (req, res) => {
         interestedStartups: {
           startupId: new ObjectId(startupId),
           startupName: startup.name,
+          supportType,
           equityRequested,
-          amountOffered,
           status: 'pending',
           createdAt: new Date()
         } 
       } 
     }
   );
+  
+  // Create notification for founder
+  await db.collection('notifications').insertOne({
+    userId: startup.founderId,
+    type: 'new_interest',
+    title: `New interest in ${startup.name}`,
+    message: `${investor.name} has expressed interest in supporting your startup.`,
+    read: false,
+    createdAt: new Date()
+  });
   
   return success(res, { 
     message: 'Interest expressed successfully',
@@ -171,17 +267,25 @@ const getInterestedStartups = asyncHandler(async (req, res) => {
       int => int.startupId.toString() === startup._id.toString()
     );
     
+    // Also get the detailed interest data from the startup
+    const startupInterest = startup.investors && startup.investors.find(
+      inv => inv.investorId.toString() === userId
+    );
+    
     return {
       ...startup,
-      interestDetails: interest
+      interestDetails: {
+        ...interest,
+        detailedInterest: startupInterest
+      }
     };
   });
   
   return success(res, { interestedStartups });
 });
 
-// Get all investments made by the investor
-const getInvestments = asyncHandler(async (req, res) => {
+// Get all contributions made by the investor
+const getContributions = asyncHandler(async (req, res) => {
   const db = getDB();
   const userId = req.user.id;
   
@@ -189,18 +293,48 @@ const getInvestments = asyncHandler(async (req, res) => {
     userId: new ObjectId(userId)
   });
   
-  if (!profile || !profile.investmentsMade) {
-    return success(res, { investments: [] });
+  if (!profile || !profile.contributions) {
+    return success(res, { contributions: [] });
   }
   
-  return success(res, { investments: profile.investmentsMade });
+  // Get additional details for each contribution
+  const contributionsWithDetails = await Promise.all(
+    profile.contributions.map(async (contribution) => {
+      const startup = await db.collection('startups').findOne(
+        { _id: new ObjectId(contribution.startupId) },
+        { 
+          projection: { 
+            name: 1, 
+            description: 1, 
+            industry: 1,
+            status: 1,
+            pitchMaterials: {
+              $filter: {
+                input: "$pitchMaterials",
+                as: "material",
+                cond: { $eq: ["$$material.type", "logo"] }
+              }
+            }
+          } 
+        }
+      );
+      
+      return {
+        ...contribution,
+        startupDetails: startup || { name: "Unknown Startup" }
+      };
+    })
+  );
+  
+  return success(res, { contributions: contributionsWithDetails });
 });
 
 module.exports = {
   getProfile,
   updateProfile,
   getAvailableStartups,
+  getStartupDetails,
   expressInterest,
   getInterestedStartups,
-  getInvestments
+  getContributions
 };

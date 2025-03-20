@@ -3,9 +3,10 @@ const {
   getProfile,
   updateProfile,
   getAvailableStartups,
+  getStartupDetails,
   expressInterest,
   getInterestedStartups,
-  getInvestments
+  getContributions
 } = require('../controllers/investorController');
 const { protect } = require('../middlewares/auth');
 const { investorOnly } = require('../middlewares/role-middlewares');
@@ -21,8 +22,9 @@ router.put('/profile', updateProfile);
 
 // Startup routes
 router.get('/startups/available', getAvailableStartups);
+router.get('/startups/:id', getStartupDetails);
 router.post('/startups/:startupId/interest', expressInterest);
 router.get('/startups/interested', getInterestedStartups);
-router.get('/investments', getInvestments);
+router.get('/contributions', getContributions);
 
 module.exports = router;
