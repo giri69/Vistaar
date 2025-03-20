@@ -5,6 +5,8 @@ import AuthPage from './pages/AuthPage';
 import FounderDashboardPage from './pages/FounderDashboardPage';
 import InvestorDashboardPage from './pages/InvestorDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import ProfilePage from './pages/Profile';
+
 
 function App() {
   return (
@@ -15,6 +17,7 @@ function App() {
         <Route path="/founder-dashboard" element={<FounderDashboardPage />} />
         <Route path="/investor-dashboard" element={<InvestorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
+        <Route path="/profile" element={<ProfilePage/>} />
       </Routes>
     </Router>
   );
