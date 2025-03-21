@@ -14,7 +14,7 @@ function Footer() {
                 <div className="absolute -inset-1 bg-blue-500/20 rounded-full blur-sm -z-10"></div>
               </div>
               <span className="ml-2 text-xl font-medium text-gray-900">
-                fund<span className="font-bold">mentorship</span>
+                <span className="font-bold">VISTAAR</span>
               </span>
             </div>
             <p className="text-gray-600 mb-4 leading-relaxed">
