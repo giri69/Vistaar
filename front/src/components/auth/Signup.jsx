@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
 
 function Signup() {
@@ -8,8 +7,8 @@ function Signup() {
     name: '',
     email: '',
     password: '',
-    role: 'founder', // or 'investor'
-    cibilScore: 750 // Default CIBIL score for investors
+    role: 'founder',
+    cibilScore: 750,
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -20,8 +19,7 @@ function Signup() {
     setIsLoading(true);
     
     try {
-      // If role is investor, make sure we include the CIBIL score
-      const submitData = {...formData};
+      const submitData = { ...formData };
       if (formData.role !== 'investor') {
         delete submitData.cibilScore;
       }
@@ -40,17 +38,14 @@ function Signup() {
         throw new Error(data.message || 'Registration failed');
       }
       
-      // Save token to localStorage
       localStorage.setItem('token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
       
-      // Redirect based on user role
       if (data.data.user.role === 'founder') {
         navigate('/founder-dashboard');
       } else if (data.data.user.role === 'investor') {
         navigate('/investor-dashboard');
       }
-      
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
     } finally {
@@ -59,81 +54,67 @@ function Signup() {
   };
 
   return (
-    <div className="max-w-md w-full space-y-8">
-      <div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Create your account
-        </h2>
-      </div>
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div className="rounded-md shadow-sm -space-y-px">
-          <div>
-            <input
-              type="text"
-              required
-              className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Full name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <input
-              type="email"
-              required
-              className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              required
-              className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <select
-              className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              disabled={isLoading}
-            >
-              <option value="founder">Founder</option>
-              <option value="investor">Investor</option>
-            </select>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 shadow-lg rounded-xl w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create Your Account</h2>
+        {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            disabled={isLoading}
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email Address"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            disabled={isLoading}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            disabled={isLoading}
+            required
+          />
+          <select
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.role}
+            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+            disabled={isLoading}
+          >
+            <option value="founder">Founder</option>
+            <option value="investor">Investor</option>
+          </select>
           {formData.role === 'investor' && (
-            <div>
-              <input
-                type="number"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your CIBIL Score"
-                value={formData.cibilScore}
-                onChange={(e) => setFormData({ ...formData, cibilScore: parseInt(e.target.value) })}
-                disabled={isLoading}
-              />
-            </div>
+            <input
+              type="number"
+              placeholder="Enter Your CIBIL Score"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.cibilScore}
+              onChange={(e) => setFormData({ ...formData, cibilScore: parseInt(e.target.value) })}
+              disabled={isLoading}
+              required
+            />
           )}
-        </div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Creating Account...' : 'Sign up'}
-        </Button>
-      </form>
+          <button
+            type="submit"
+            className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Creating Account...' : 'Sign Up'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

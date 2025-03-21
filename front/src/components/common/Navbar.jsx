@@ -67,7 +67,7 @@ function Navbar() {
                   <div className="absolute -inset-1 bg-blue-500/20 rounded-full blur-sm -z-10"></div>
                 </div>
                 <span className={`ml-2 text-xl font-medium ${isScrolled ? 'text-gray-900' : 'text-gray-800'} transition-colors duration-300`}>
-                  fund<span className="font-bold">mentorship</span>
+                  <span className="font-bold">VISTAAR</span>
                 </span>
               </div>
             </Link>
