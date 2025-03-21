@@ -20,16 +20,49 @@ const AspectRatio = ({ children, ratio = 16 / 9, className = "" }) => {
   );
 };
 
+// Helper function for embedding YouTube video
+const embedYouTubeVideo = (url) => {
+  const videoId = url.split('v=')[1]?.split('&')[0]; // Extracts video ID from the URL
+  return `https://www.youtube.com/embed/${videoId}`;
+};
+
 const InvestorDashboard = () => {
-  // Mock data for opportunities
+  // Predefined random YouTube links
+  const randomYouTubeLinks = [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",  // Example video
+    "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",  // Another example
+    "https://www.youtube.com/watch?v=2Vv-BfVoq4g",  // Another random video
+    "https://www.youtube.com/watch?v=J---aiyS1Jk",  // Another random video
+    "https://www.youtube.com/watch?v=YbJOTdZBX1g"   // Yet another
+  ];
+
+  // Helper function to get a random YouTube link from the array
+  const getRandomYouTubeLink = () => {
+    const randomIndex = Math.floor(Math.random() * randomYouTubeLinks.length);
+    return randomYouTubeLinks[randomIndex];
+  };
+
+  // Mock data for opportunities with random YouTube links
   const opportunities = [
+    {
+      id: 0,
+      name: "Nicesleep",
+      category: "Comfort",
+      tag: "High Growth",
+      tagColor: "#06c",
+      videoUrl: 'https://www.youtube.com/watch?v=AvlETxvb4m8',
+      description: "New age mattress revolution",
+      fundingGoal: "$2.5M",
+      raised: "$1.8M",
+      progress: 34
+    },
     {
       id: 1,
       name: "TechStart Inc.",
       category: "AI/ML Platform",
       tag: "High Growth",
       tagColor: "#06c",
-      videoUrl: "https://storage.googleapis.com/coverr-main/mp4/Mt_Baker.mp4",
+      videoUrl: getRandomYouTubeLink(),
       description: "Revolutionizing AI solutions for businesses with innovative machine learning algorithms.",
       fundingGoal: "$2.5M",
       raised: "$1.8M",
@@ -41,7 +74,7 @@ const InvestorDashboard = () => {
       category: "Clean Tech",
       tag: "Sustainable",
       tagColor: "#35c759",
-      videoUrl: "https://storage.googleapis.com/coverr-main/mp4/Footprints_In_The_Sand.mp4",
+      videoUrl: getRandomYouTubeLink(),
       description: "Developing renewable energy technologies to reduce carbon footprint and promote sustainability.",
       fundingGoal: "$4M",
       raised: "$2.2M",
@@ -53,7 +86,7 @@ const InvestorDashboard = () => {
       category: "Health & Wellness",
       tag: "Growing",
       tagColor: "#ff9f0a",
-      videoUrl: "https://storage.googleapis.com/coverr-main/mp4/Swimming.mp4",
+      videoUrl: getRandomYouTubeLink(),
       description: "Building next-generation healthcare solutions for remote patient monitoring and diagnostics.",
       fundingGoal: "$3M",
       raised: "$1.5M",
@@ -65,7 +98,7 @@ const InvestorDashboard = () => {
       category: "Financial Technology",
       tag: "Promising",
       tagColor: "#5856d6",
-      videoUrl: "https://storage.googleapis.com/coverr-main/mp4/Sea.mp4",
+      videoUrl: getRandomYouTubeLink(),
       description: "Creating secure blockchain solutions for financial transactions and digital asset management.",
       fundingGoal: "$5M",
       raised: "$2.8M",
@@ -77,7 +110,7 @@ const InvestorDashboard = () => {
       category: "IoT & Smart Devices",
       tag: "Innovative",
       tagColor: "#ef4444",
-      videoUrl: "https://storage.googleapis.com/coverr-main/mp4/Coventry_Cathedral.mp4",
+      videoUrl: getRandomYouTubeLink(),
       description: "Developing integrated smart home solutions that enhance quality of life and energy efficiency.",
       fundingGoal: "$1.8M",
       raised: "$1.2M",
@@ -141,17 +174,13 @@ const InvestorDashboard = () => {
                     <div key={opportunity.id} className="bg-[#f5f5f7] rounded-2xl overflow-hidden border border-[#e8e8ed] transition-all duration-300 hover:shadow-lg group">
                       <div className="relative">
                         <AspectRatio ratio={16 / 9} className="bg-gray-100">
-                          <video
+                          <iframe
                             className="w-full h-full object-cover"
-                            src={opportunity.videoUrl}
-                            muted
-                            loop
-                            onMouseOver={(e) => e.currentTarget.play()}
-                            onMouseOut={(e) => {
-                              e.currentTarget.pause();
-                              e.currentTarget.currentTime = 0;
-                            }}
-                          />
+                            src={embedYouTubeVideo(opportunity.videoUrl)}
+                            title="YouTube video player"
+                            frameBorder="0"
+                            allowFullScreen
+                          ></iframe>
                         </AspectRatio>
                         <div className="absolute top-4 right-4">
                           <span
